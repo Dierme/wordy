@@ -1,13 +1,16 @@
 <?php
-namespace common\models;
+/**
+ * Created by PhpStorm.
+ * User: kalim_000
+ * Date: 2/23/2017
+ * Time: 2:12 PM
+ */
 
-use Yii;
+namespace common\models;
 use yii\base\Model;
 
-/**
- * Login form
- */
-class LoginForm extends Model
+
+abstract class LoginForm extends Model
 {
     public $username;
     public $password;
@@ -56,7 +59,7 @@ class LoginForm extends Model
     public function login()
     {
         if ($this->validate()) {
-            return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600 * 24 * 30 : 0);
+            return \Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600 * 24 * 30 : 0);
         } else {
             return false;
         }
