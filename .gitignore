@@ -28,6 +28,8 @@ composer.phar
 
 # phpunit itself is not needed
 phpunit.phar
+phpunit
+phpunit.bat
 # local phpunit config
 /phpunit.xml
 
