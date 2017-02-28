@@ -6,6 +6,7 @@ use yii\base\NotSupportedException;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
+use common\validators\StatusValidator;
 
 /**
  * User model
@@ -23,9 +24,17 @@ use yii\web\IdentityInterface;
  */
 class User extends ActiveRecord implements IdentityInterface
 {
-    const STATUS_DELETED = 0;
-    const STATUS_ACTIVE = 10;
+    const ROLE_ADMIN = 'admin';
+    const ROLE_USER = 'user';
 
+    /**
+     * @var array
+     */
+    public static $statusDictionary = [
+        0 => 'Deleted',
+        1 => 'Banned',
+        10 => 'Active'
+    ];
 
     /**
      * @inheritdoc
@@ -51,8 +60,8 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
-            ['status', 'default', 'value' => self::STATUS_ACTIVE],
-            ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_DELETED]],
+            ['status', 'default', 'value' => array_search('Active', self::$statusDictionary)],
+            ['status', StatusValidator::className()],
         ];
     }
 
@@ -61,7 +70,7 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findIdentity($id)
     {
-        return static::findOne(['id' => $id, 'status' => self::STATUS_ACTIVE]);
+        return static::findOne(['id' => $id, 'status' => array_search('Active', self::$statusDictionary)]);
     }
 
     /**
@@ -80,7 +89,7 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public static function findByUsername($username)
     {
-        return static::findOne(['username' => $username, 'status' => self::STATUS_ACTIVE]);
+        return static::findOne(['username' => $username, 'status' => array_search('Active', self::$statusDictionary)]);
     }
 
     /**
@@ -97,7 +106,7 @@ class User extends ActiveRecord implements IdentityInterface
 
         return static::findOne([
             'password_reset_token' => $token,
-            'status' => self::STATUS_ACTIVE,
+            'status' => array_search('Active', self::$statusDictionary),
         ]);
     }
 
@@ -113,7 +122,7 @@ class User extends ActiveRecord implements IdentityInterface
             return false;
         }
 
-        $timestamp = (int) substr($token, strrpos($token, '_') + 1);
+        $timestamp = (int)substr($token, strrpos($token, '_') + 1);
         $expire = Yii::$app->params['user.passwordResetTokenExpire'];
         return $timestamp + $expire >= time();
     }
@@ -185,5 +194,34 @@ class User extends ActiveRecord implements IdentityInterface
     public function removePasswordResetToken()
     {
         $this->password_reset_token = null;
+    }
+
+    /**
+     * Checks if user has admin role by ID
+     * @param int $userID
+     * @return bool
+     */
+    public static function isAdmin($userID)
+    {
+
+        $roleQuery = AuthAssignment::find()->where([
+            'user_id'=>$userID,
+            'item_name'=>self::ROLE_ADMIN
+        ]);
+
+        if($roleQuery->exists()){
+            return true;
+        }
+
+        return false;
+
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getAssignment()
+    {
+        return $this->hasOne(AuthAssignment::className(), ['user_id' => 'id']);
     }
 }
